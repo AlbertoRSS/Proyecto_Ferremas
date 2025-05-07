@@ -1,0 +1,98 @@
+--Creacion de tablas
+
+-- Tabla de Categorías (Ej: Herramientas, Materiales de Construcción)
+CREATE TABLE categoria (
+    id_categoria INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_categoria VARCHAR(100) NOT NULL
+);
+
+-- Tabla de Marcas (Ej: Bosch, Black & Decker)
+CREATE TABLE marca (
+    id_marca INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_marca VARCHAR(100) NOT NULL
+);
+
+-- Tabla de Productos
+CREATE TABLE producto (
+    id_producto INT AUTO_INCREMENT PRIMARY KEY,
+    codigo_producto VARCHAR(50) UNIQUE NOT NULL,
+    nombre_producto VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    id_categoria INT,
+    id_marca INT,
+    precio DECIMAL(10,2),
+    stock INT DEFAULT 0,
+    FOREIGN KEY (id_categoria) REFERENCES categoria(id_categoria),
+    FOREIGN KEY (id_marca) REFERENCES marca(id_marca)
+);
+
+-- Tabla de Contactos de clientes
+CREATE TABLE contacto (
+    id_contacto INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_cliente VARCHAR(100),
+    correo_cliente VARCHAR(100),
+    mensaje TEXT,
+    fecha_contacto DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Precios productos
+CREATE TABLE precio_producto (
+    id_precio INT AUTO_INCREMENT PRIMARY KEY,
+    id_producto INT NOT NULL,
+    fecha_precio DATETIME DEFAULT CURRENT_TIMESTAMP,
+    valor DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (id_producto) REFERENCES producto(id_producto)
+);
+*******************************************************************************************************************************************************************************
+*******************************************************************************************************************************************************************************
+*******************************************************************************************************************************************************************************
+
+-- Insert productos de prueba
+
+INSERT INTO categoria (nombre_categoria) VALUES
+('Herramientas Manuales'),
+('Herramientas Electricas'),
+('Materiales de Construccion'),
+('Acabados'),
+('Equipos de Seguridad');
+
+INSERT INTO marca (nombre_marca) VALUES
+('Bosch'),
+('Black & Decker'),
+('Makita'),
+('Stanley'),
+('3M');
+
+INSERT INTO producto (codigo_producto, nombre_producto, descripcion, id_categoria, id_marca, precio, stock) VALUES
+('FER-0001', 'Martillo de carpintero', 'Martillo de acero con mango de goma antideslizante', 1, 4, 8990.00, 50),
+('FER-0002', 'Taladro Percutor Bosch', 'Taladro electrico con percutor de 650W', 2, 1, 45990.00, 30),
+('FER-0003', 'Cemento gris 25kg', 'Saco de cemento para construccion', 3, 3, 5990.00, 100),
+('FER-0004', 'Pintura blanca 1 galon', 'Pintura latex para interiores', 4, 2, 13990.00, 40),
+('FER-0005', 'Casco de seguridad 3M', 'Casco industrial con suspension ajustable', 5, 5, 10990.00, 20);
+
+INSERT INTO precio_producto (id_producto, valor) VALUES
+(1, 8990.00),
+(2, 45990.00),
+(3, 5990.00),
+(4, 13990.00),
+(5, 10990.00);
+
+*******************************************************************************************************************************************************************************
+*******************************************************************************************************************************************************************************
+*******************************************************************************************************************************************************************************
+
+--Consulta General Productos
+
+SELECT p.id_producto, p.nombre_producto, c.nombre_categoria, m.nombre_marca, pp.valor
+FROM producto p
+JOIN categoria c ON p.id_categoria = c.id_categoria
+JOIN marca m ON p.id_marca = m.id_marca
+LEFT JOIN precio_producto pp ON pp.id_producto = p.id_producto;
+
+Para borrar datos
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+truncate table ....
+
+SET FOREIGN_KEY_CHECKS = 1;
