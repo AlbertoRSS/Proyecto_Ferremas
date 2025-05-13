@@ -1,0 +1,18 @@
+# Imagen base de Python
+FROM python:3.11-slim
+
+# Establecer el directorio de trabajo en el contenedor
+WORKDIR /app
+
+# Copiar solo los archivos necesarios
+COPY ferremas-back/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar el resto del proyecto
+COPY ferremas-back/. .
+
+# Exponer el puerto que usará Flask
+EXPOSE 5000
+
+# Comando para ejecutar la app
+CMD ["python", "main.py"]
