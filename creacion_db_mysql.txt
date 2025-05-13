@@ -58,6 +58,15 @@ CREATE TABLE inventario_tienda (
     FOREIGN KEY (id_tienda) REFERENCES tienda(id_tienda),
     FOREIGN KEY (id_producto) REFERENCES producto(id_producto)
 );
+
+CREATE TABLE carrito_temporal (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    producto_id INT,
+    cantidad INT,
+    id_tienda INT,
+    session_id VARCHAR(255),  -- para identificar a qué sesión pertenece
+    fecha_agregado DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 *******************************************************************************************************************************************************************************
 *******************************************************************************************************************************************************************************
 *******************************************************************************************************************************************************************************
