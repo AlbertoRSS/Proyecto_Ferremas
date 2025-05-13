@@ -24,24 +24,28 @@ def obtener_productos_desde_bd():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             query = """SELECT 
-                    p.codigo_producto AS codigo_ferremas,
-                    p.nombre_producto,
-                    p.descripcion,
-                    m.nombre_marca,
-                    c.nombre_categoria,
-                    p.stock,
-                    pr.fecha_precio,
-                    pr.valor
-                FROM producto p
-                LEFT JOIN marca m ON p.id_marca = m.id_marca
-                LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                LEFT JOIN (
-                    SELECT id_producto, MAX(fecha_precio) AS ultima_fecha
-                    FROM precio_producto
-                    GROUP BY id_producto
-                ) ultimos ON p.id_producto = ultimos.id_producto
-                LEFT JOIN precio_producto pr 
-                    ON p.id_producto = pr.id_producto AND pr.fecha_precio = ultimos.ultima_fecha"""  # Tu misma consulta aquí (omitida por brevedad)
+                        p.codigo_producto AS codigo_ferremas,
+                        p.nombre_producto,
+                        p.descripcion,
+                        m.nombre_marca,
+                        c.nombre_categoria,
+                        COALESCE(SUM(it.stock), 0) AS stock_total,
+                        pr.fecha_precio,
+                        pr.valor
+                    FROM producto p
+                    LEFT JOIN marca m ON p.id_marca = m.id_marca
+                    LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
+                    LEFT JOIN (
+                        SELECT id_producto, MAX(fecha_precio) AS ultima_fecha
+                        FROM precio_producto
+                        GROUP BY id_producto
+                    ) ultimos ON p.id_producto = ultimos.id_producto
+                    LEFT JOIN precio_producto pr 
+                        ON p.id_producto = pr.id_producto AND pr.fecha_precio = ultimos.ultima_fecha
+                    LEFT JOIN inventario_tienda it ON p.id_producto = it.id_producto
+                    GROUP BY 
+                        p.codigo_producto, p.nombre_producto, p.descripcion, 
+                        m.nombre_marca, c.nombre_categoria, pr.fecha_precio, pr.valor""" 
             cursor.execute(query)
             resultados = cursor.fetchall()
 
@@ -52,7 +56,7 @@ def obtener_productos_desde_bd():
                 "Nombre": fila["nombre_producto"],
                 "Marca": fila["nombre_marca"],
                 "Categoria": fila["nombre_categoria"],
-                "Stock": fila["stock"],
+                "Stock": fila["stock_total"],
                 "Descripcion": fila["descripcion"],
                 "Precio": [
                     {
@@ -97,15 +101,47 @@ def mostrar_productos():
     return render_template('index.html', productos=productos)
 
 # Agregar producto al carrito usando sesión
-@app.route('/agregar_al_carrito', methods=['POST'])
+@app.route('/agregar_al_carrito', methods=['POST']) 
 def agregar_al_carrito():
-    data = request.get_json()  # Obtiene el JSON enviado por el cliente
+    data = request.get_json()
+    print(f"Datos recibidos: {data}") 
     producto_id = data.get('producto_id')
+    print(f"Producto ID: {producto_id}")
     cantidad = data.get('cantidad', 1)
+    print(f"Cantidad solicitada: {cantidad}")
+    id_tienda = 2  # Aquí está el ID de la tienda en bruto
+    print(f"ID Tienda: {id_tienda}")
 
     if not producto_id:
         return jsonify({'error': 'Falta el ID del producto'}), 400
 
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT it.stock 
+                FROM inventario_tienda it 
+                JOIN producto p ON it.id_producto = p.id_producto 
+                WHERE p.codigo_producto = %s AND it.id_tienda = %s
+            """, (producto_id, id_tienda))
+
+            row = cursor.fetchone()
+            print(f"Resultado de la consulta: {row}")
+
+            if not row:
+                return jsonify({'error': 'No hay stock'}), 404
+
+            stock_disponible = row['stock'] 
+            print(f"Stock disponible: {stock_disponible}")
+
+            if stock_disponible < cantidad:
+                return jsonify({'error': 'No hay suficiente stock para este producto en la tienda'}), 400
+
+    except Exception as e:
+        print(f"Error en la consulta: {e}") 
+        return jsonify({'error': 'Error al verificar el stock'}), 500
+
+    # Agregar el producto al carrito
     carrito = session.get('carrito', {})
     carrito[producto_id] = carrito.get(producto_id, 0) + cantidad
     session['carrito'] = carrito
@@ -113,58 +149,38 @@ def agregar_al_carrito():
     return jsonify({'success': f'Producto {producto_id} añadido con cantidad {cantidad}'})
 
 # Obtener productos con cantidades desde la sesión
-def obtener_producto_por_id(lista_ids, cantidades_dict):
-    if not lista_ids:
-        return []
-
+def obtener_producto_por_id(lista_codigos, cantidades):
+    productos = []
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            lista_ids = [str(i).strip() for i in lista_ids]
-            formato_ids = ','.join(['%s'] * len(lista_ids))
-            query = f"""
-                SELECT 
-                    p.codigo_producto AS codigo_ferremas,
-                    p.nombre_producto,
-                    m.nombre_marca,
-                    pr.valor,
-                    p.stock
-                FROM producto p
-                LEFT JOIN marca m ON p.id_marca = m.id_marca
-                LEFT JOIN (
-                    SELECT id_producto, MAX(fecha_precio) AS ultima_fecha
-                    FROM precio_producto
-                    GROUP BY id_producto
-                ) ultimos ON p.id_producto = ultimos.id_producto
-                LEFT JOIN precio_producto pr 
-                    ON p.id_producto = pr.id_producto AND pr.fecha_precio = ultimos.ultima_fecha
-                WHERE p.codigo_producto IN ({formato_ids})
-            """
-            cursor.execute(query, lista_ids)
-            resultados = cursor.fetchall()
-
-        productos = []
-        for fila in resultados:
-            codigo = fila["codigo_ferremas"]
-            cantidad = cantidades_dict.get(codigo, 1)
-            precio = float(fila["valor"]) if fila["valor"] else 0.0
-            subtotal = precio * cantidad
-
-            productos.append({
-                "Codigo_del_producto": codigo,
-                "Nombre": fila["nombre_producto"],
-                "Marca": fila["nombre_marca"],
-                "Precio_unitario": precio,
-                "Cantidad": cantidad,
-                "Subtotal": subtotal,
-                "Stock": fila["stock"]
-            })
-
-        return productos
-
+            for codigo in lista_codigos:
+                cursor.execute("""
+                    SELECT 
+                        p.codigo_producto AS Codigo_del_producto,
+                        p.nombre_producto AS Nombre,
+                        m.nombre_marca AS Marca,
+                        p.precio AS Precio_unitario
+                    FROM producto p
+                    JOIN marca m ON p.id_marca = m.id_marca
+                    WHERE p.codigo_producto = %s
+                """, (codigo,))
+                row = cursor.fetchone()
+                if row:
+                    cantidad = cantidades.get(codigo, 1)
+                    subtotal = row['Precio_unitario'] * cantidad
+                    productos.append({
+                        'Codigo_del_producto': row['Codigo_del_producto'],
+                        'Nombre': row['Nombre'],
+                        'Marca': row['Marca'],
+                        'Precio_unitario': row['Precio_unitario'],
+                        'Cantidad': cantidad,
+                        'Subtotal': subtotal
+                    })
     except Exception as e:
-        print("Error al obtener productos con cantidades:", e)
-        return []
+        print(f"Error en obtener_producto_por_id: {e}")
+    
+    return productos
 
 # Ver carrito
 @app.route('/ver_carrito')
@@ -197,80 +213,58 @@ def eliminar_del_carrito(producto_id):
 @app.route('/finalizar_compra', methods=['POST'])
 def finalizar_compra():
     carrito = session.get('carrito', {})
-    
-    if not carrito:
-        return jsonify({"error": "Tu carrito está vacío"}), 400
-    
-    try:
-        print("Inicio de proceso de compra")
-        productos_comprados = []
+    id_tienda = 2  #Aqui va el Id de la tienda que debe ser dinamico
 
+    if not carrito:
+        return jsonify({'error': 'El carrito está vacío'}), 400
+
+    try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            for producto_id, cantidad in carrito.items():
-                print(f"Procesando producto: {producto_id} con cantidad: {cantidad}")
+            for codigo_producto, cantidad in carrito.items():
+                # Obtener el ID real del producto
+                cursor.execute("SELECT id_producto FROM producto WHERE codigo_producto = %s", (codigo_producto,))
+                producto_row = cursor.fetchone()
+                if not producto_row:
+                    return jsonify({'error': f'Producto con código {codigo_producto} no encontrado'}), 400
+
+                id_producto = producto_row['id_producto']
+
+                # Verificar stock
                 cursor.execute("""
-                    SELECT 
-                        p.nombre_producto, 
-                        m.nombre_marca, 
-                        pr.valor AS precio_unitario, 
-                        p.stock 
-                    FROM producto p
-                    LEFT JOIN marca m ON p.id_marca = m.id_marca
-                    LEFT JOIN (
-                        SELECT id_producto, MAX(fecha_precio) AS ultima_fecha
-                        FROM precio_producto
-                        GROUP BY id_producto
-                    ) ultimos ON p.id_producto = ultimos.id_producto
-                    LEFT JOIN precio_producto pr 
-                        ON p.id_producto = pr.id_producto AND pr.fecha_precio = ultimos.ultima_fecha
-                    WHERE p.codigo_producto = %s
-                """, (producto_id,))
-                
-                producto = cursor.fetchone()
+                    SELECT stock FROM inventario_tienda
+                    WHERE id_producto = %s AND id_tienda = %s
+                """, (id_producto, id_tienda))
+                inventario_row = cursor.fetchone()
 
-                if not producto:
-                    return jsonify({"error": f"Producto {producto_id} no encontrado"}), 404
+                if not inventario_row:
+                    return jsonify({'error': f'Producto {codigo_producto} no disponible en esta tienda'}), 400
 
-                stock_actual = producto['stock']
+                stock_actual = inventario_row['stock']
                 if stock_actual < cantidad:
-                    return jsonify({"error": f"Stock insuficiente para el producto {producto_id}"}), 400
-                
+                    return jsonify({'error': f'Stock insuficiente para el producto {codigo_producto}'}), 400
+
+                # Actualizar stock
                 nuevo_stock = stock_actual - cantidad
-                print(f"Actualizando stock de {producto_id} a {nuevo_stock}")
-                cursor.execute(
-                    "UPDATE producto SET stock = %s WHERE codigo_producto = %s",
-                    (nuevo_stock, producto_id)
-                )
-
-                subtotal = producto['precio_unitario'] * cantidad
-
-                productos_comprados.append({
-                    'codigo': producto_id,
-                    'nombre': producto['nombre_producto'],
-                    'marca': producto['nombre_marca'],
-                    'precio_unitario': producto['precio_unitario'],
-                    'cantidad': cantidad,
-                    'subtotal': subtotal
-                })
+                cursor.execute("""
+                    UPDATE inventario_tienda
+                    SET stock = %s
+                    WHERE id_producto = %s AND id_tienda = %s
+                """, (nuevo_stock, id_producto, id_tienda))
 
             conn.commit()
-            print("Compra confirmada y stock actualizado.")
 
-        session.pop('carrito', None)
-        session['productos_comprados'] = productos_comprados
+        # Limpiar carrito después de la compra
+        session['carrito'] = {}
 
-        # Retorna la URL para redirigir a la página de confirmación
         return jsonify({
-            "success": "Compra realizada con éxito",
-            "redirect_url": url_for('confirmacion_pedido')  # Asegúrate de tener esta ruta definida
+            'success': 'Compra finalizada exitosamente',
+            'redirect_url': url_for('confirmacion_pedido')  # Puedes cambiar esto si deseas otra página
         })
 
     except Exception as e:
-        print(f"Error al finalizar la compra: {e}")
-        if 'conn' in locals():
-            conn.rollback()
-        return jsonify({"error": "Hubo un error al procesar la compra"}), 500
+        print(f"Error al finalizar compra: {e}")
+        return jsonify({'error': 'Error al procesar la compra'}), 500
 
 @app.route('/confirmacion_pedido')
 def confirmacion_pedido():

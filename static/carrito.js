@@ -30,9 +30,15 @@ document.getElementById('finalizar-compra-btn').addEventListener('click', functi
   })
     .then(response => response.json())
     .then(data => {
-      if (data.success && data.redirect_url) {
-        // Redirigir a la página de confirmación recibida en el JSON
-        window.location.href = data.redirect_url;
+      if (data.success) {
+        alert(data.success);
+        // Redirige si se proporciona una URL de destino
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+        } else {
+          // O simplemente recarga la página
+          window.location.reload();
+        }
       } else {
         alert(data.error || 'Error al finalizar la compra');
       }

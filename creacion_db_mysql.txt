@@ -21,7 +21,6 @@ CREATE TABLE producto (
     id_categoria INT,
     id_marca INT,
     precio DECIMAL(10,2),
-    stock INT DEFAULT 0,
     FOREIGN KEY (id_categoria) REFERENCES categoria(id_categoria),
     FOREIGN KEY (id_marca) REFERENCES marca(id_marca)
 );
@@ -41,6 +40,22 @@ CREATE TABLE precio_producto (
     id_producto INT NOT NULL,
     fecha_precio DATETIME DEFAULT CURRENT_TIMESTAMP,
     valor DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (id_producto) REFERENCES producto(id_producto)
+);
+
+-- Tabla de Tiendas
+CREATE TABLE tienda (
+    id_tienda INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_tienda VARCHAR(100) NOT NULL
+);
+
+-- Nueva tabla: inventario por tienda
+CREATE TABLE inventario_tienda (
+    id_tienda INT,
+    id_producto INT,
+    stock INT DEFAULT 0,
+    PRIMARY KEY (id_tienda, id_producto),
+    FOREIGN KEY (id_tienda) REFERENCES tienda(id_tienda),
     FOREIGN KEY (id_producto) REFERENCES producto(id_producto)
 );
 *******************************************************************************************************************************************************************************
@@ -64,11 +79,11 @@ INSERT INTO marca (nombre_marca) VALUES
 ('3M');
 
 INSERT INTO producto (codigo_producto, nombre_producto, descripcion, id_categoria, id_marca, precio, stock) VALUES
-('FER-0001', 'Martillo de carpintero', 'Martillo de acero con mango de goma antideslizante', 1, 4, 8990.00, 50),
-('FER-0002', 'Taladro Percutor Bosch', 'Taladro electrico con percutor de 650W', 2, 1, 45990.00, 30),
-('FER-0003', 'Cemento gris 25kg', 'Saco de cemento para construccion', 3, 3, 5990.00, 100),
-('FER-0004', 'Pintura blanca 1 galon', 'Pintura latex para interiores', 4, 2, 13990.00, 40),
-('FER-0005', 'Casco de seguridad 3M', 'Casco industrial con suspension ajustable', 5, 5, 10990.00, 20);
+('FER-0001', 'Martillo de carpintero', 'Martillo de acero con mango de goma antideslizante', 1, 4, 8990.00),
+('FER-0002', 'Taladro Percutor Bosch', 'Taladro electrico con percutor de 650W', 2, 1, 45990.00),
+('FER-0003', 'Cemento gris 25kg', 'Saco de cemento para construccion', 3, 3, 5990.00),
+('FER-0004', 'Pintura blanca 1 galon', 'Pintura latex para interiores', 4, 2, 13990.00),
+('FER-0005', 'Casco de seguridad 3M', 'Casco industrial con suspension ajustable', 5, 5, 10990.00);
 
 INSERT INTO precio_producto (id_producto, valor) VALUES
 (1, 8990.00),
