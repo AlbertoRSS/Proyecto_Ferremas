@@ -88,3 +88,16 @@ INSERT INTO precio_producto (id_producto, valor) VALUES
 (3, 5990.00),
 (4, 13990.00),
 (5, 10990.00);
+
+INSERT INTO tienda (nombre_tienda) VALUES
+('MaipU'),
+('Santiago'),
+('Providencia');
+
+INSERT INTO inventario_tienda (id_tienda, id_producto, stock) VALUES
+(1, 1, 15),
+(2, 3, 10),
+(3, 2, 9),
+(1, 5, 25),
+(2, 4, 13),
+(3, 3, 4);

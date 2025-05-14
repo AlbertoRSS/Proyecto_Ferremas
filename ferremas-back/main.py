@@ -257,7 +257,7 @@ def ver_carrito():
             })
             total += subtotal
 
-        return render_template('carrito.html', productos=productos_info, total=total)
+        return {"productos_info": productos_info, "total":total}
 
     except Exception as e:
         print(f"Error al consultar el carrito: {e}")
