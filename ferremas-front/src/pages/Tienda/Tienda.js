@@ -6,14 +6,24 @@ import { Outlet, Link } from "react-router-dom";
 const Tienda = () => {
   useEffect(() => {
     axios.get('http://localhost:5000/api/productos')
-        .then(response => {
-            setProductos(response.data)
+        .then(rProductos => {
+            setProductos(rProductos.data)
         })
         .catch(error => {
-            console.log('err')
+            console.log(error)
+        });
+    axios.get('http://localhost:5000/stock-tiendas')
+        .then(rStock => {
+            setStockTiendas(rStock.data)
+        })
+        .catch(error => {
+            console.log(error)
         });
   }, []);
+
   const [productos, setProductos] = useState([])
+  const [stockTiendas, setStockTiendas] = useState([])
+  const [tienda, setTienda] = useState(0)
 
   const formatoMoneda = (numero) => {
     return new Intl.NumberFormat('es-CL', {
@@ -26,17 +36,24 @@ const Tienda = () => {
   const agregarCarrito = (producto) => {
     const body = {
       cantidad: 1,
-      producto_id: producto.Codigo_del_producto
+      producto_id: producto.Codigo_del_producto,
+      tienda: tienda
     }
     axios.post('http://localhost:5000/agregar_al_carrito', body)
         .then(response => {
           console.log(response)
           alert(response.data.success);
+          setTienda(0)
         })
         .catch(error => {
           console.log(error)
           alert('Error al comunicar con el servidor');
         });
+  }
+
+  const selectEvent = (event, id_producto) => {
+    let t = stockTiendas.filter((tienda) => event.target.value.includes(tienda.nombre_tienda) && tienda.id_producto === id_producto)
+    setTienda(t[0]?.id_tienda || 0)
   }
 
   return (
@@ -134,7 +151,15 @@ const Tienda = () => {
                     <p> <strong> Categoria: </strong> { producto['Categoria'] } </p>
                     <p> <strong> Marca: </strong> { producto['Marca'] } </p>
                     <p> <strong> Precio: </strong> {formatoMoneda(producto['Precio'][0]['Valor']) } </p>
-                    <p> <strong> Stock: </strong> { producto['Stock'] } </p>
+                    {/* <p> <strong> Stock: </strong> { producto['Stock'] } </p> */}
+                    <p> <strong> Tienda: </strong> 
+                      <select class="form-select" aria-label="Default select example" onChange={event => selectEvent(event, producto.id_producto)}>
+                        <option selected> Seleccionar </option>
+                        {stockTiendas.filter((tienda) => tienda.id_producto === producto["id_producto"]).map((tienda) => (
+                          <option id={tienda.id_tienda} > {tienda.nombre_tienda} (Stock: {tienda.stock}) </option>
+                        ))}
+                      </select> 
+                    </p>
                   </div>
                   <div className="modal-footer">
                     <button className="btn btn-success" onClick={()=>agregarCarrito(producto)}>Añadir al Carrito</button>

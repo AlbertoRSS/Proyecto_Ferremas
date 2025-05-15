@@ -4,18 +4,20 @@ import './carrito.css';
 import { Outlet, Link } from "react-router-dom";
 
 const Carrito = () => {
-  // useEffect(() => {
-  //   axios.get('http://localhost:5000/api/productos')
-  //       .then(response => {
-  //           console.log(response)
-  //           setProductos(response.data)
-  //       })
-  //       .catch(error => {
-  //           console.log('err')
-  //       });
-  // }, []);
+  useEffect(() => {
+    axios.get('http://localhost:5000/ver_carrito')
+        .then(response => {
+            console.log(response)
+            setCarrito(response.data.productos_info)
+            setTotal(response.data.total)
+        })
+        .catch(error => {
+            console.log(error)
+        });
+  }, []);
 
   const [carrito, setCarrito] = useState([])
+  const [total, setTotal] = useState([])
 
   const formatoMoneda = (numero) => {
     return new Intl.NumberFormat('es-CL', {
@@ -30,6 +32,41 @@ const Carrito = () => {
     console.log(producto)
     console.log("si pudiera")
   }
+
+  const pagar = async () => {
+    // try {
+      console.log(total)
+      const body = {
+        amount: parseFloat(total)
+      }
+      axios.post('http://localhost:5000/api/iniciar-transaccion', body)
+        .then(response => {
+          console.log(response)
+          // const data = response.json();
+          window.location.href = `${response.data.url}?token_ws=${response.data.token}`;
+        })
+        .catch(error => {
+            console.log(error)
+            console.error('Error de red:', error);
+        });
+      // const response = await fetch('http://tu-backend-flask.com/api/iniciar-transaccion', {
+      //   method: 'POST',
+      //   headers: {'Content-Type': 'application/json',},
+      //   body: JSON.stringify({ amount: parseFloat(monto) }),
+      // });
+
+    //   if (response.ok) {
+    //     const data = await response.json();
+    //     window.location.href = `${data.url}?token_ws=${data.token}`;
+    //   } else {
+    //     console.error('Error al iniciar la transacción:', response.status);
+    //     // Mostrar mensaje de error al usuario
+    //   }
+    // } catch (error) {
+    //   console.error('Error de red:', error);
+    //   // Mostrar mensaje de error al usuario
+    // }
+  };
 
   return (
     <>
@@ -60,10 +97,10 @@ const Carrito = () => {
         </div>
       </nav>
         
-      <div id="carrito-container">
+      <div id="carrito-container" className="p-5" >
         {carrito.length > 0 ?
         <>
-          <table className="table">
+          <table className="table" >
             <thead>
               <tr>
                 <th key="th-codigo">Código</th>
@@ -84,9 +121,9 @@ const Carrito = () => {
                     <td>{ item.Marca }</td>
                     <td>{ formatoMoneda(item.Precio_unitario) }</td>
                     <td>{ item.Cantidad }</td>
-                    <td>{ item.Subtotal }</td>
+                    <td>{ formatoMoneda(item.Subtotal) }</td>
                     <td>
-                      <button className="btn btn-danger btn-sm" onclick={()=>quitarProducto(item.Codigo_del_producto)}>
+                      <button className="btn btn-danger btn-sm" onClick={()=>quitarProducto(item.Codigo_del_producto)}>
                         Eliminar
                       </button>
                     </td>
@@ -100,12 +137,17 @@ const Carrito = () => {
         <p>Tu carrito está vacío.</p>}
       </div>
       
-      <div className="d-flex justify-content-between mt-4">
-        <h4>Total: { "aqui iria el total" }</h4>
-        <button id="finalizar-compra-btn" className="btn btn-primary">Finalizar Compra</button>
+      <div className="d-flex flex-row justify-content-around" >
+          <a href="/" role="button" className="button-b align-self-end" >Volver al inicio </a>
+
+        <div className="d-flex flex-column" > 
+          <h4>Total: { formatoMoneda(total) }  </h4>
+          <button id="finalizar-compra-btn" type="button" className="button ml-5" onClick={pagar}>
+              Finalizar Compra
+          </button>
+        </div>
       </div>
 
-      <a href="/tienda" className="btn btn-primary mt-3">Volver al inicio</a>
 
       {/* <!-- FOOTER --> */}
       <footer className="bg-dark text-white text-center p-3 mt-5">

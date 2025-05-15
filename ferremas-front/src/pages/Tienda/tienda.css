@@ -16,7 +16,7 @@
     height: 350px;
     object-fit: cover;
 }
-.button {
+.button, .button-b {
     -moz-transition: all 0.25s ease-in-out;
     -webkit-transition: all 0.25s ease-in-out;
     -ms-transition: all 0.25s ease-in-out;
@@ -24,7 +24,6 @@
     -webkit-appearance: none;
     position: relative;
     display: inline-block;
-    background: #ed786a;
     color: #fff !important;
     text-transform: uppercase;
     border-radius: 4px;
@@ -37,6 +36,12 @@
     font-size: 0.85em;
     letter-spacing: 2px;
     padding: 0.85em 2.75em 0.85em 2.75em;
+}
+.button {
+    background: #ed786a;
+}
+.button-b {
+    background: #626262;
 }
 .img-wrapper {
     width: 100%;

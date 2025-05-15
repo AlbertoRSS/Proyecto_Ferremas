@@ -1,1 +1,11 @@
+#Ejecutar todo el proyecto
 docker-compose -f docker-compose.yml up --build -d
+
+#Construir solo mysql
+docker-compose  up --build -d mysql
+
+#Construir solo backend
+docker-compose  up --build -d backend
+
+#Construir solo frontend
+docker-compose  up --build -d frontend

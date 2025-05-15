@@ -1,8 +1,12 @@
-from flask import render_template, jsonify, redirect, url_for, request, session
+from flask import render_template, jsonify, redirect, url_for, request, session, Flask
 from config import app
 from config import get_db_connection
 from flask_cors import CORS
 from werkzeug.exceptions import BadRequest
+from transbank.webpay.webpay_plus.transaction import Transaction
+from transbank.common.integration_type import IntegrationType
+from transbank.common.options import WebpayOptions
+import time
 
 app.secret_key = 'clave_secreta_para_sesion'  # Necesario para usar session
 
@@ -27,6 +31,7 @@ def obtener_productos_desde_bd():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             query = """SELECT 
+                        p.id_producto AS id_producto,
                         p.codigo_producto AS codigo_ferremas,
                         p.nombre_producto,
                         p.descripcion,
@@ -66,7 +71,8 @@ def obtener_productos_desde_bd():
                         "Fecha": fila["fecha_precio"].isoformat() if fila["fecha_precio"] else None,
                         "Valor": float(fila["valor"]) if fila["valor"] else None
                     }
-                ]
+                ],
+                "id_producto": fila["id_producto"]
             })
 
         return productos
@@ -104,6 +110,7 @@ def obtener_inventario_tiendas():
         with conn.cursor() as cursor:
             query = """
                 SELECT t.nombre_tienda,
+                       it.id_tienda,
                        it.id_producto,
                        it.stock
                 FROM inventario_tienda it
@@ -133,7 +140,7 @@ def agregar_al_carrito():
 
     codigo_producto = data.get('producto_id')  
     cantidad = data.get('cantidad', 1)
-    id_tienda = 2 
+    id_tienda = data.get('tienda', 1)
 
     if not codigo_producto:
         return jsonify({'error': 'Falta el código del producto'}), 400
@@ -222,8 +229,6 @@ def obtener_producto_por_id(lista_codigos, cantidades):
 # Ver carrito
 @app.route('/ver_carrito')
 def ver_carrito():
-    id_tienda = 2  # Fijo por ahora
-
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -236,8 +241,7 @@ def ver_carrito():
                 FROM carrito_temporal ct
                 JOIN producto p ON ct.producto_id = p.id_producto
                 JOIN marca m ON p.id_marca = m.id_marca
-                WHERE ct.id_tienda = %s
-            """, (id_tienda,))
+            """)
             rows = cursor.fetchall()
 
         conn.close()
@@ -344,6 +348,43 @@ def confirmacion_pedido():
 @app.route('/consulta_api')
 def consulta_api():
     return render_template('consulta_api.html')   
+
+@app.route('/api/iniciar-transaccion', methods=['POST'])
+def iniciar_transaccion_api():
+    data = request.get_json()
+    amount = data.get('amount')
+    buy_order = 'orden-' + str(time.time())
+    session_id = 'sesion-' + str(time.time())
+
+    options = WebpayOptions(app.config['WEBPAY_COMMERCE_CODE'], app.config['WEBPAY_API_KEY_SECRET'], IntegrationType.TEST)
+    transaction = Transaction(options)
+
+    try:
+        init_result = transaction.create(
+            amount=amount,
+            buy_order=buy_order,
+            session_id=session_id,
+            return_url=app.config['WEBPAY_URL_RETURN']
+        )
+        
+        return jsonify({'url': init_result['url'], 'token': init_result['token']})
+    except Exception as e:
+        print(f"Error al iniciar la transacción: {e}")
+        return jsonify({'error': 'Error al iniciar la transacción.'}), 500
+    
+@app.route('/webpay/retorno', methods=['POST'])
+def webpay_retorno():
+    token_ws = request.form.get('token_ws')
+    transaction = Transaction(integration_type=app.config['WEBPAY_INTEGRACION_TYPE'])
+    try:
+        result = transaction.get_transaction_result(token=token_ws)
+        # Aquí podrías guardar el resultado en tu base de datos
+        # Luego, podrías redirigir al frontend con información sobre el resultado
+        frontend_redirect_url = f"http://localhost:3000/pago?token_ws={token_ws}&status={result.get('status')}"
+        return redirect(frontend_redirect_url)
+    except Exception as e:
+        print(f"Error al obtener el resultado de la transacción: {e}")
+        return "Error al obtener el resultado de la transacción."
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

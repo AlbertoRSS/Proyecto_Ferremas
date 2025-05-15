@@ -90,7 +90,7 @@ INSERT INTO precio_producto (id_producto, valor) VALUES
 (5, 10990.00);
 
 INSERT INTO tienda (nombre_tienda) VALUES
-('MaipU'),
+('Maipu'),
 ('Santiago'),
 ('Providencia');
 
