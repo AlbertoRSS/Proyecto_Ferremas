@@ -16,7 +16,7 @@ app.config['DB_NAME'] = os.getenv("DB_NAME")
 app.config['WEBPAY_INTEGRACION_TYPE'] = 'test'
 app.config['WEBPAY_COMMERCE_CODE'] = '597055555532'
 app.config['WEBPAY_API_KEY_SECRET'] = '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C'
-app.config['WEBPAY_URL_RETURN'] = 'http://localhost:5000/webpay/retorno'
+app.config['WEBPAY_URL_RETURN'] = 'http://localhost:3000/pago'
 app.config['WEBPAY_URL_FINAL'] = 'http://localhost:5000/webpay/final'
 
 # Configuración de la secret_key

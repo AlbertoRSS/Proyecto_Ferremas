@@ -42,30 +42,12 @@ const Carrito = () => {
       axios.post('http://localhost:5000/api/iniciar-transaccion', body)
         .then(response => {
           console.log(response)
-          // const data = response.json();
           window.location.href = `${response.data.url}?token_ws=${response.data.token}`;
         })
         .catch(error => {
             console.log(error)
             console.error('Error de red:', error);
         });
-      // const response = await fetch('http://tu-backend-flask.com/api/iniciar-transaccion', {
-      //   method: 'POST',
-      //   headers: {'Content-Type': 'application/json',},
-      //   body: JSON.stringify({ amount: parseFloat(monto) }),
-      // });
-
-    //   if (response.ok) {
-    //     const data = await response.json();
-    //     window.location.href = `${data.url}?token_ws=${data.token}`;
-    //   } else {
-    //     console.error('Error al iniciar la transacción:', response.status);
-    //     // Mostrar mensaje de error al usuario
-    //   }
-    // } catch (error) {
-    //   console.error('Error de red:', error);
-    //   // Mostrar mensaje de error al usuario
-    // }
   };
 
   return (
