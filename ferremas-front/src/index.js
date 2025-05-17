@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 // import App from './App';
 import reportWebVitals from './reportWebVitals';
-import Layout from './pages/Layout';
 import Tienda from './pages/Tienda/Tienda';
 import Carrito from './pages/Carrito/Carrito';
 import Pago from './pages/Pago/Pago';
@@ -13,14 +12,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/tienda-antigua" element={<Layout />} />
         <Route path="/" element={<Tienda />} />
         <Route path="/carrito" element={<Carrito />} />
         <Route path="/pago" element={<Pago />} />
-          {/* <Route index element={<Home />} />
-          <Route path="blogs" element={<Blogs />} />
-          <Route path="contact" element={<Contact />} />
-          <Route path="*" element={<NoPage />} /> */}
       </Routes>
     </BrowserRouter>
   );

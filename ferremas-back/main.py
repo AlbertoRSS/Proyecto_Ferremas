@@ -374,14 +374,18 @@ def iniciar_transaccion_api():
     
 @app.route('/webpay/retorno', methods=['POST'])
 def webpay_retorno():
-    token_ws = request.form.get('token_ws')
-    transaction = Transaction(integration_type=app.config['WEBPAY_INTEGRACION_TYPE'])
+    data = request.get_json()
+    print(data)
+    token_ws = data.get('token_ws')
+    print(token_ws)
+    options = WebpayOptions(app.config['WEBPAY_COMMERCE_CODE'], app.config['WEBPAY_API_KEY_SECRET'], IntegrationType.TEST)
+    transaction = Transaction(options = options)
     try:
-        result = transaction.get_transaction_result(token=token_ws)
-        # Aquí podrías guardar el resultado en tu base de datos
-        # Luego, podrías redirigir al frontend con información sobre el resultado
-        frontend_redirect_url = f"http://localhost:3000/pago?token_ws={token_ws}&status={result.get('status')}"
-        return redirect(frontend_redirect_url)
+        result = transaction.commit(token=token_ws)
+
+        # Aquí puedes procesar el resultado (verificar estado, monto, etc.)
+        # y luego redirigir a la URL final con el token para consultar el resultado final
+        return result
     except Exception as e:
         print(f"Error al obtener el resultado de la transacción: {e}")
         return "Error al obtener el resultado de la transacción."

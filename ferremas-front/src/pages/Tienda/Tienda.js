@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import './tienda.css';
-import { Outlet, Link } from "react-router-dom";
+import Navbar from "../../components/navbar"; 
+import Footer from "../../components/footer";
+import Moneda from "../../components/moneda";
 
 const Tienda = () => {
   useEffect(() => {
@@ -24,14 +26,6 @@ const Tienda = () => {
   const [productos, setProductos] = useState([])
   const [stockTiendas, setStockTiendas] = useState([])
   const [tienda, setTienda] = useState(0)
-
-  const formatoMoneda = (numero) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(numero);
-  };
 
   const agregarCarrito = (producto) => {
     const body = {
@@ -58,32 +52,7 @@ const Tienda = () => {
 
   return (
     <>
-      <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div className="container">
-          <a className="navbar-brand" href="/">FERREMAS</a>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarNav"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div className="collapse navbar-collapse" id="navbar-ferre">
-            <ul className="navbar-nav ms-auto">
-              <li key="li1" className="nav-item">
-                <a className="nav-link" href="/">Inicio</a>
-              </li>
-              <li key="li2" className="nav-item">
-                <a className="nav-link" href="#">Contacto</a>
-              </li>
-              <li key="li3" className="nav-item">
-                <a className="nav-link" href="/carrito">Carrito</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </nav>
+      <Navbar/>
 
       {/* <!-- BANNER PROMOCIONAL --> */}
       <section id="banner">
@@ -100,31 +69,29 @@ const Tienda = () => {
         <h2 className="mb-4 pt-4">Productos Destacados</h2>
         <div key="destacados" className="row">
           {productos.map((producto) => (
-            <>
-              <div key={"destacado-"+producto['Codigo_del_producto']} className="col-md-4 mb-4">
-                <div className="card h-100">
-                  <div className="img-wrapper">
-                    <img 
-                      src={'img/'+producto['Nombre']+'.jpeg' }  
-                      className="card-img-top img-fluid img-fixed-size image featured" 
-                      alt={ producto['Nombre'] } 
-                    />
-                  </div>
-                  <div className="card-body">
-                    <h5 className="card-title"> { producto['Nombre'] } </h5>
-                    <p className="card-text"><strong> { formatoMoneda(producto['Precio'][0]['Valor']) }</strong></p>
-                    <p className="card-text text-muted"> Stock: { producto['Stock'] }</p>
-                    <button 
-                      type="button" 
-                      className="button" 
-                      data-bs-toggle="modal" 
-                      data-bs-target={"#modal"+producto['Codigo_del_producto']}>
-                      Ver más
-                    </button>
-                  </div>
+            <div key={"destacado-"+producto['Codigo_del_producto']} className="col-md-4 mb-4">
+              <div className="card h-100">
+                <div className="img-wrapper">
+                  <img 
+                    src={'img/'+producto['Nombre']+'.jpeg' }  
+                    className="card-img-top img-fluid img-fixed-size image featured" 
+                    alt={ producto['Nombre'] } 
+                  />
+                </div>
+                <div className="card-body">
+                  <h5 className="card-title"> { producto['Nombre'] } </h5>
+                  <p className="card-text"><strong> { <Moneda moneda={producto['Precio'][0]['Valor']} /> }</strong></p>
+                  <p className="card-text text-muted"> Stock: { producto['Stock'] }</p>
+                  <button 
+                    type="button" 
+                    className="button" 
+                    data-bs-toggle="modal" 
+                    data-bs-target={"#modal"+producto['Codigo_del_producto']}>
+                    Ver más
+                  </button>
                 </div>
               </div>
-            </>
+            </div>
           ))}
 
           {productos.map((producto) => (
@@ -150,13 +117,17 @@ const Tienda = () => {
                     <p> { producto['Descripcion'] } </p>
                     <p> <strong> Categoria: </strong> { producto['Categoria'] } </p>
                     <p> <strong> Marca: </strong> { producto['Marca'] } </p>
-                    <p> <strong> Precio: </strong> {formatoMoneda(producto['Precio'][0]['Valor']) } </p>
-                    {/* <p> <strong> Stock: </strong> { producto['Stock'] } </p> */}
+                    <p> <strong> Precio: </strong> <Moneda moneda={producto['Precio'][0]['Valor']}/> </p>
                     <p> <strong> Tienda: </strong> 
-                      <select class="form-select" aria-label="Default select example" onChange={event => selectEvent(event, producto.id_producto)}>
-                        <option selected> Seleccionar </option>
+                      <select 
+                        className="form-select" 
+                        aria-label="Default select example" 
+                        onChange={event => selectEvent(event, producto.id_producto)}
+                        defaultValue={producto.id_producto+"-selec"}
+                      >
+                        <option key={producto.id_producto+"-selec"}> Seleccionar </option>
                         {stockTiendas.filter((tienda) => tienda.id_producto === producto["id_producto"]).map((tienda) => (
-                          <option id={tienda.id_tienda} > {tienda.nombre_tienda} (Stock: {tienda.stock}) </option>
+                          <option key={producto.id_producto+"-"+tienda.id_tienda} > {tienda.nombre_tienda} (Stock: {tienda.stock}) </option>
                         ))}
                       </select> 
                     </p>
@@ -173,10 +144,7 @@ const Tienda = () => {
         </div>
       </div>
 
-      {/* <!-- FOOTER --> */}
-      <footer className="bg-dark text-white text-center p-3 mt-5">
-        &copy; 2025 FERREMAS. Todos los derechos reservados.
-      </footer>
+      <Footer/>
     </>
   )
 };
