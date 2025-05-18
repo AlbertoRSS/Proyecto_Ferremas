@@ -173,6 +173,28 @@ def agregar_al_carrito():
             stock_disponible = stock_row['stock']
             print(f"Stock disponible: {stock_disponible}")
 
+            # Verificar carrito
+            cursor.execute("""
+                SELECT * 
+                FROM ferremas.carrito_temporal ct 
+                WHERE producto_id = %s AND id_tienda = %s
+            """, (id_producto, id_tienda))
+            carrito = cursor.fetchone()
+
+            if carrito:
+                nuevaCantidad = int(cantidad) + int(carrito['cantidad'])
+
+                if stock_disponible < nuevaCantidad:
+                    return jsonify({'error': 'No hay suficiente stock'}), 400
+
+                cursor.execute("""
+                    UPDATE ferremas.carrito_temporal
+                    SET cantidad = %s
+                    WHERE id = %s
+                """, (nuevaCantidad, carrito['id']))
+                conn.commit()
+                return jsonify({'success': f'Producto {codigo_producto} modificado con cantidad: {nuevaCantidad}'})
+
             if stock_disponible < cantidad:
                 return jsonify({'error': 'No hay suficiente stock'}), 400
 
@@ -186,7 +208,7 @@ def agregar_al_carrito():
             conn.commit()
 
         conn.close()
-        return jsonify({'success': f'Producto {codigo_producto} añadido con cantidad {cantidad}'})
+        return jsonify({'success': f'Producto {codigo_producto} añadido con cantidad: {cantidad}'})
 
     except Exception as e:
         print(f"Error al agregar al carrito: {e}")
@@ -234,6 +256,8 @@ def ver_carrito():
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT ct.cantidad,
+                       ct.producto_id,
+                       ct.id_tienda,
                        p.codigo_producto,
                        p.nombre_producto,
                        p.precio,
@@ -253,6 +277,9 @@ def ver_carrito():
             subtotal = row['cantidad'] * row['precio']
             productos_info.append({
                 "Codigo_del_producto": row['codigo_producto'],
+                "Cantidad": row['cantidad'],
+                "ProductoId": row['producto_id'],
+                "TiendaId": row['id_tienda'],
                 "Nombre": row['nombre_producto'],
                 "Marca": row['nombre_marca'],
                 "Precio_unitario": row['precio'],
@@ -267,12 +294,12 @@ def ver_carrito():
         print(f"Error al consultar el carrito: {e}")
         return render_template('carrito.html', productos=[], total=0)
 
-@app.route('/eliminar_del_carrito/<int:producto_id>', methods=['DELETE'])
-def eliminar_del_carrito(producto_id):
+@app.route('/eliminar_del_carrito/<producto_id>/<id_tienda>', methods=['DELETE'])
+def eliminar_del_carrito(producto_id, id_tienda):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM carrito_temporal WHERE producto_id = %s", (producto_id,))
+            cursor.execute("DELETE FROM carrito_temporal WHERE producto_id = %s AND id_tienda = %s", (producto_id, id_tienda))
             conn.commit()
             if cursor.rowcount == 0:
                 return jsonify({"error": "Producto no encontrado en el carrito"}), 404
