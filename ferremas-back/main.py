@@ -7,6 +7,7 @@ from transbank.webpay.webpay_plus.transaction import Transaction
 from transbank.common.integration_type import IntegrationType
 from transbank.common.options import WebpayOptions
 import time
+from datetime import datetime
 
 app.secret_key = 'clave_secreta_para_sesion'  # Necesario para usar session
 
@@ -132,7 +133,7 @@ def mostrar_productos():
     productos = obtener_productos_desde_bd()
     return render_template('index.html', productos=productos)
 
-# Agregar producto al carrito usando sesión
+# Agregar producto al carrito
 @app.route('/agregar_al_carrito', methods=['POST']) 
 def agregar_al_carrito():
     data = request.get_json()
@@ -192,7 +193,7 @@ def agregar_al_carrito():
         print(f"Error al agregar al carrito: {e}")
         return jsonify({'error': 'Error interno al agregar al carrito'}), 500
 
-# Obtener productos con cantidades desde la sesión
+# Obtener productos con cantidades
 def obtener_producto_por_id(lista_codigos, cantidades):
     productos = []
     try:
@@ -237,7 +238,7 @@ def ver_carrito():
                        p.codigo_producto,
                        p.nombre_producto,
                        p.precio,
-                       m.nombre_marca
+                       m.nombre_marca,
                 FROM carrito_temporal ct
                 JOIN producto p ON ct.producto_id = p.id_producto
                 JOIN marca m ON p.id_marca = m.id_marca
@@ -282,72 +283,7 @@ def eliminar_del_carrito(producto_id):
 
     except Exception as e:
         print(f"Error al eliminar el producto del carrito: {e}")
-        return jsonify({"error": "Error al eliminar el producto del carrito"}), 500
-    
-@app.route('/finalizar_compra', methods=['POST'])
-def finalizar_compra():
-    carrito = session.get('carrito', {})
-    id_tienda = 2  #Aqui va el Id de la tienda que debe ser dinamico
-
-    if not carrito:
-        return jsonify({'error': 'El carrito está vacío'}), 400
-
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            for codigo_producto, cantidad in carrito.items():
-                # Obtener el ID real del producto
-                cursor.execute("SELECT id_producto FROM producto WHERE codigo_producto = %s", (codigo_producto,))
-                producto_row = cursor.fetchone()
-                if not producto_row:
-                    return jsonify({'error': f'Producto con código {codigo_producto} no encontrado'}), 400
-
-                id_producto = producto_row['id_producto']
-
-                # Verificar stock
-                cursor.execute("""
-                    SELECT stock FROM inventario_tienda
-                    WHERE id_producto = %s AND id_tienda = %s
-                """, (id_producto, id_tienda))
-                inventario_row = cursor.fetchone()
-
-                if not inventario_row:
-                    return jsonify({'error': f'Producto {codigo_producto} no disponible en esta tienda'}), 400
-
-                stock_actual = inventario_row['stock']
-                if stock_actual < cantidad:
-                    return jsonify({'error': f'Stock insuficiente para el producto {codigo_producto}'}), 400
-
-                # Actualizar stock
-                nuevo_stock = stock_actual - cantidad
-                cursor.execute("""
-                    UPDATE inventario_tienda
-                    SET stock = %s
-                    WHERE id_producto = %s AND id_tienda = %s
-                """, (nuevo_stock, id_producto, id_tienda))
-
-            conn.commit()
-
-        # Limpiar carrito después de la compra
-        session['carrito'] = {}
-
-        return jsonify({
-            'success': 'Compra finalizada exitosamente',
-            'redirect_url': url_for('confirmacion_pedido')  # Puedes cambiar esto si deseas otra página
-        })
-
-    except Exception as e:
-        print(f"Error al finalizar compra: {e}")
-        return jsonify({'error': 'Error al procesar la compra'}), 500
-
-@app.route('/confirmacion_pedido')
-def confirmacion_pedido():
-    productos_comprados = session.get('productos_comprados', [])
-    return render_template('confirmacion_pedido.html', productos=productos_comprados)
-
-@app.route('/consulta_api')
-def consulta_api():
-    return render_template('consulta_api.html')   
+        return jsonify({"error": "Error al eliminar el producto del carrito"}), 500  
 
 @app.route('/api/iniciar-transaccion', methods=['POST'])
 def iniciar_transaccion_api():
@@ -390,5 +326,119 @@ def webpay_retorno():
         print(f"Error al obtener el resultado de la transacción: {e}")
         return "Error al obtener el resultado de la transacción."
 
+
+@app.route('/finalizar_compra', methods=['POST'])
+def finalizar_compra():
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Aqui se obtienen los productos del carrito temporal
+            cursor.execute("""
+                SELECT producto_id, cantidad, id_tienda
+                FROM carrito_temporal
+            """)
+            productos = cursor.fetchall()
+
+            if not productos:
+                return jsonify({'error': 'El carrito está vacío'}), 400
+
+            # Este es el cogigo que va a entregar transkbank
+            codigo_venta = str('prueba_compra001')
+
+            for item in productos:
+                producto_id = item['producto_id']
+                cantidad = item['cantidad']
+                id_tienda = item['id_tienda']
+
+                # 2. Verificar stock actual
+                cursor.execute("""
+                    SELECT stock 
+                    FROM inventario_tienda 
+                    WHERE id_producto = %s AND id_tienda = %s
+                """, (producto_id, id_tienda))
+                stock_row = cursor.fetchone()
+
+                if not stock_row or stock_row['stock'] < cantidad:
+                    return jsonify({'error': f'Stock insuficiente para el producto ID {producto_id}'}), 400
+
+                # 3. Actualizar el stock
+                nuevo_stock = stock_row['stock'] - cantidad
+                cursor.execute("""
+                    UPDATE inventario_tienda 
+                    SET stock = %s 
+                    WHERE id_producto = %s AND id_tienda = %s
+                """, (nuevo_stock, producto_id, id_tienda))
+
+                # 4. Insertar en la tabla carrito (registro de compra)
+                cursor.execute("""
+                    INSERT INTO carrito (venta, producto_id, cantidad, id_tienda)
+                    VALUES (%s, %s, %s, %s)
+                """, (codigo_venta, producto_id, cantidad, id_tienda))
+
+            # 5. Vaciar el carrito temporal
+            cursor.execute("DELETE FROM carrito_temporal")
+
+            conn.commit()
+
+        conn.close()
+        return jsonify({'success': f'Compra finalizada con código de venta: {codigo_venta}'})
+
+    except Exception as e:
+        print(f"Error al finalizar la compra: {e}")
+        return jsonify({'error': 'Error interno al finalizar la compra'}), 500
+
+# Seccion de contacto
+@app.route('/contacto')
+def contacto():
+    return render_template('contacto.html')
+
+@app.route('/enviar_contacto', methods=['POST'])
+def enviar_contacto():
+    nombre = request.form.get('nombre')
+    correo = request.form.get('correo')
+    mensaje = request.form.get('mensaje')
+
+    if not nombre or not correo or not mensaje:
+        return "Faltan datos", 400
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO contacto (nombre_cliente, correo_cliente, mensaje)
+                VALUES (%s, %s, %s)
+            """, (nombre, correo, mensaje))
+            conn.commit()
+        conn.close()
+        return render_template('contacto.html', success=True)
+    except Exception as e:
+        print(f"Error al guardar contacto: {e}")
+        return "Error interno", 500
+    
+@app.route('/contactos_realizados', methods=['GET'])
+def contactos_realizados():
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            query = """
+                SELECT id_contacto,
+                       nombre_cliente,
+                       correo_cliente,
+                       mensaje,
+                       fecha_contacto
+                FROM contacto
+            """
+            cursor.execute(query)
+            resultados = cursor.fetchall()
+        
+        conn.close()
+
+        return jsonify(resultados)
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
+
+
