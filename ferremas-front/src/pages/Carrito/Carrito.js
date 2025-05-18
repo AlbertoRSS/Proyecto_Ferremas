@@ -9,7 +9,6 @@ const Carrito = () => {
   useEffect(() => {
     axios.get('http://localhost:5000/ver_carrito')
         .then(response => {
-            console.log(response)
             setCarrito(response.data.productos_info)
             setTotal(response.data.total)
         })
@@ -22,9 +21,26 @@ const Carrito = () => {
   const [total, setTotal] = useState(0)
 
   const quitarProducto = (producto) => {
-    console.log("Aqui quitaria este producto")
-    console.log(producto)
-    console.log("si pudiera")
+    const url = `http://localhost:5000/eliminar_del_carrito/${producto.ProductoId}/${producto.TiendaId}`
+    axios.delete(url)
+      .then(response => {
+        cargarCarrito()
+      })
+      .catch(error => {
+          console.log(error)
+          console.error('Error de red:', error);
+      });
+  }
+
+  const cargarCarrito = () => {
+    axios.get('http://localhost:5000/ver_carrito')
+        .then(response => {
+            setCarrito(response.data.productos_info)
+            setTotal(response.data.total)
+        })
+        .catch(error => {
+            console.log(error)
+        });
   }
 
   const pagar = async () => {
@@ -35,7 +51,6 @@ const Carrito = () => {
       }
       axios.post('http://localhost:5000/api/iniciar-transaccion', body)
         .then(response => {
-          console.log(response)
           window.location.href = `${response.data.url}?token_ws=${response.data.token}`;
         })
         .catch(error => {
@@ -74,8 +89,8 @@ const Carrito = () => {
                     <td>{ item.Cantidad }</td>
                     <td>{ <Moneda moneda={item.Subtotal} /> }</td>
                     <td>
-                      <button className="btn btn-danger btn-sm" onClick={()=>quitarProducto(item.Codigo_del_producto)}>
-                        Eliminar
+                      <button className="btn btn-danger btn-sm" onClick={()=>quitarProducto(item)}>
+                        Quitar
                       </button>
                     </td>
                   </tr>

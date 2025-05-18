@@ -1,0 +1,41 @@
+input::-moz-focus-inner {
+	border: 0;
+	padding: 0;
+}
+
+input, form textarea {
+	-moz-appearance: none;
+	-webkit-appearance: none;
+	-ms-appearance: none;
+	appearance: none;
+    font-family: 'Source Sans Pro';
+    font-weight: 300;
+    color: #555;
+    line-height: 1.65em;
+    font-size: 15pt;
+}
+
+form input, form textarea {
+    -moz-transition: background-color 0.25s ease-in-out;
+    -webkit-transition: background-color 0.25s ease-in-out;
+    -ms-transition: background-color 0.25s ease-in-out;
+    transition: background-color 0.25s ease-in-out;
+    -webkit-appearance: none;
+    display: block;
+    border: 0;
+    background: #f0f0f0;
+    width: 100%;
+    box-shadow: inset 2px 2px 0px 0px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    line-height: 1.25em;
+    padding: 0.75em 1em 0.75em 1em;
+}
+
+form input, form textarea:focus {
+    background: #f0f0f0;
+}
+
+form ::-webkit-input-placeholder {
+    color: #555 !important;
+    line-height: 1.35em;
+}

@@ -26,28 +26,31 @@ const Tienda = () => {
   const [productos, setProductos] = useState([])
   const [stockTiendas, setStockTiendas] = useState([])
   const [tienda, setTienda] = useState(0)
+  const [cantidad, setCantidad] = useState(1)
 
   const agregarCarrito = (producto) => {
     const body = {
-      cantidad: 1,
+      cantidad: Number(cantidad),
       producto_id: producto.Codigo_del_producto,
       tienda: tienda
     }
     axios.post('http://localhost:5000/agregar_al_carrito', body)
         .then(response => {
-          console.log(response)
           alert(response.data.success);
-          setTienda(0)
         })
         .catch(error => {
           console.log(error)
-          alert('Error al comunicar con el servidor');
+          alert('Error al modificar carrito');
         });
   }
 
   const selectEvent = (event, id_producto) => {
     let t = stockTiendas.filter((tienda) => event.target.value.includes(tienda.nombre_tienda) && tienda.id_producto === id_producto)
     setTienda(t[0]?.id_tienda || 0)
+  }
+
+  const abrirModal = () => {
+    setTienda(0)
   }
 
   return (
@@ -111,7 +114,7 @@ const Tienda = () => {
                       >
                         { producto['Nombre'] }
                     </h5>
-                    <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" onClick={abrirModal}></button>
                   </div>
                   <div className="modal-body">
                     <p> { producto['Descripcion'] } </p>
@@ -131,9 +134,20 @@ const Tienda = () => {
                         ))}
                       </select> 
                     </p>
+                    <p> 
+                      <strong> Cantidad: </strong> 
+                      <input 
+                        type="number" 
+                        id="cantidad" 
+                        name="cantidad" 
+                        className="form-control"
+                        value={cantidad} 
+                        onChange={e => {setCantidad(e.target.value)}} 
+                      />
+                    </p>
                   </div>
                   <div className="modal-footer">
-                    <button className="btn btn-success" onClick={()=>agregarCarrito(producto)}>Añadir al Carrito</button>
+                    <button className="btn btn-success" onClick={()=>agregarCarrito(producto, "modal"+producto['Codigo_del_producto'] )}>Añadir al Carrito</button>
                     <button className="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                   </div>
                 </div>
