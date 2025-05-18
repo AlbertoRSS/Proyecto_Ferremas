@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Consulta de Productos - FERREMAS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+        input, select, button {
+            padding: 8px;
+            margin: 5px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+        th {
+            background-color: #f0f0f0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Consulta de Productos - FERREMAS</h1>
+
+    <div class="form-group">
+        <label for="marca">Marca:</label>
+        <input type="text" id="marca" placeholder="Ej: Bosch">
+        
+        <label for="categoria">Categoría:</label>
+        <input type="text" id="categoria" placeholder="Ej: Herramientas">
+
+        <label for="codigo">Código:</label>
+        <input type="text" id="codigo" placeholder="Ej: FER-0003">
+
+        <button onclick="consultarAPI()">Buscar</button>
+    </div>
+
+    <table id="tabla-productos" style="display: none;">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Marca</th>
+                <th>Categoría</th>
+                <th>Stock</th>
+                <th>Descripción</th>
+                <th>Precio</th>
+                <th>Fecha Precio</th>
+            </tr>
+        </thead>
+        <tbody id="resultado-body"></tbody>
+    </table>
+
+    <script src="{{ url_for('static', filename='consulta_api.js') }}"></script>
+
+</body>
+</html>
