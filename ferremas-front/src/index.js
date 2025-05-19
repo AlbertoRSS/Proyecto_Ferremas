@@ -7,6 +7,7 @@ import Tienda from './pages/Tienda/Tienda';
 import Carrito from './pages/Carrito/Carrito';
 import Pago from './pages/Pago/Pago';
 import Contacto from './pages/Contacto/Contacto';
+import Contactos from './pages/Contactos/Contactos';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/" element={<Tienda />} />
         <Route path="/carrito" element={<Carrito />} />
         <Route path="/contacto" element={<Contacto />} />
+        <Route path="/contactos/ver" element={<Contactos />} />
         <Route path="/pago" element={<Pago />} />
       </Routes>
     </BrowserRouter>

@@ -262,7 +262,7 @@ def ver_carrito():
                        p.codigo_producto,
                        p.nombre_producto,
                        p.precio,
-                       m.nombre_marca,
+                       m.nombre_marca
                 FROM carrito_temporal ct
                 JOIN producto p ON ct.producto_id = p.id_producto
                 JOIN marca m ON p.id_marca = m.id_marca
@@ -293,7 +293,7 @@ def ver_carrito():
 
     except Exception as e:
         print(f"Error al consultar el carrito: {e}")
-        return render_template('carrito.html', productos=[], total=0)
+        return {"productos_info": productos_info, "total":total}
 
 @app.route('/eliminar_del_carrito/<producto_id>/<id_tienda>', methods=['DELETE'])
 def eliminar_del_carrito(producto_id, id_tienda):
@@ -345,9 +345,8 @@ def webpay_retorno():
     transaction = Transaction(options = options)
     try:
         result = transaction.commit(token=token_ws)
-
-        # Aquí puedes procesar el resultado (verificar estado, monto, etc.)
-        # y luego redirigir a la URL final con el token para consultar el resultado final
+        if result["status"] == "AUTHORIZED":
+            finalizar_compra()
         return result
     except Exception as e:
         print(f"Error al obtener el resultado de la transacción: {e}")
@@ -421,9 +420,10 @@ def contacto():
 
 @app.route('/enviar_contacto', methods=['POST'])
 def enviar_contacto():
-    nombre = request.form.get('nombre')
-    correo = request.form.get('correo')
-    mensaje = request.form.get('mensaje')
+    data = request.get_json()
+    nombre = data.get('nombre')
+    correo = data.get('correo')
+    mensaje = data.get('mensaje')
 
     if not nombre or not correo or not mensaje:
         return "Faltan datos", 400
@@ -437,11 +437,11 @@ def enviar_contacto():
             """, (nombre, correo, mensaje))
             conn.commit()
         conn.close()
-        return render_template('contacto.html', success=True)
+        return jsonify(success="Contacto enviado correctamente")
     except Exception as e:
         print(f"Error al guardar contacto: {e}")
         return "Error interno", 500
-    
+
 @app.route('/contactos_realizados', methods=['GET'])
 def contactos_realizados():
     try:
@@ -467,5 +467,3 @@ def contactos_realizados():
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
-
-

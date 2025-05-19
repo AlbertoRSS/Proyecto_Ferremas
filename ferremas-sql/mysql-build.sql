@@ -1,4 +1,3 @@
-
 CREATE TABLE categoria (
     id_categoria INT AUTO_INCREMENT PRIMARY KEY,
     nombre_categoria VARCHAR(100) NOT NULL
@@ -60,6 +59,14 @@ CREATE TABLE carrito_temporal (
     fecha_agregado DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE carrito (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    venta VARCHAR(255),
+    producto_id INT,
+    cantidad INT,
+    id_tienda INT,
+    fecha_agregado DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
 INSERT INTO categoria (nombre_categoria) VALUES
 ('Herramientas Manuales'),

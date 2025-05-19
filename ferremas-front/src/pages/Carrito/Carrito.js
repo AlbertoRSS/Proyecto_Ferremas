@@ -21,6 +21,7 @@ const Carrito = () => {
   const [total, setTotal] = useState(0)
 
   const quitarProducto = (producto) => {
+    console.log(producto)
     const url = `http://localhost:5000/eliminar_del_carrito/${producto.ProductoId}/${producto.TiendaId}`
     axios.delete(url)
       .then(response => {
@@ -44,7 +45,6 @@ const Carrito = () => {
   }
 
   const pagar = async () => {
-    // try {
       console.log(total)
       const body = {
         amount: parseFloat(total)

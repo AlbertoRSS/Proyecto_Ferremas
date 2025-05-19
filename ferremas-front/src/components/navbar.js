@@ -47,7 +47,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+      <nav className="navbar sticky-top navbar-expand-lg navbar-dark bg-dark ">
         <div className="container">
           <a className="navbar-brand" href="/">FERREMAS</a>
           <button
@@ -73,7 +73,7 @@ const Navbar = () => {
                 </select> 
               </li>
               <li key="Inicio" className="nav-item">
-                <a className="nav-link active" href="/">Inicio</a>
+                <a className="nav-link" href="/">Inicio</a>
               </li>
               <li key="Contacto" className="nav-item">
                 <a className="nav-link" href="/contacto">Contacto</a>
