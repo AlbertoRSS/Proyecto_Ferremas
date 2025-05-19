@@ -11,6 +11,7 @@ const Carrito = () => {
         .then(response => {
             setCarrito(response.data.productos_info)
             setTotal(response.data.total)
+            setCargaInical(0)
         })
         .catch(error => {
             console.log(error)
@@ -19,6 +20,7 @@ const Carrito = () => {
 
   const [carrito, setCarrito] = useState([])
   const [total, setTotal] = useState(0)
+  const [cargaInicial, setCargaInical] = useState(1)
 
   const quitarProducto = (producto) => {
     console.log(producto)
@@ -64,7 +66,7 @@ const Carrito = () => {
       <Navbar/>
         
       <div id="carrito-container" className="p-5" style={{"minHeight": "34.45rem"}} >
-        {carrito.length > 0 ?
+        {cargaInicial ? <p>Cargando...</p> : carrito.length > 0 ?
         <>
           <table className="table" >
             <thead>

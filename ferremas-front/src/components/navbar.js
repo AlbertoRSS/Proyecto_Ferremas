@@ -54,7 +54,7 @@ const Navbar = () => {
             className="navbar-toggler"
             type="button"
             data-bs-toggle="collapse"
-            data-bs-target="#navbarNav"
+            data-bs-target="#navbar-ferre"
           >
             <span className="navbar-toggler-icon"></span>
           </button>
