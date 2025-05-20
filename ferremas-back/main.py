@@ -346,7 +346,7 @@ def webpay_retorno():
     try:
         result = transaction.commit(token=token_ws)
         if result["status"] == "AUTHORIZED":
-            finalizar_compra()
+            finalizar_compra(result["buy_order"])
         return result
     except Exception as e:
         print(f"Error al obtener el resultado de la transacción: {e}")
@@ -354,7 +354,7 @@ def webpay_retorno():
 
 
 @app.route('/finalizar_compra', methods=['POST'])
-def finalizar_compra():
+def finalizar_compra(codigo):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -369,7 +369,7 @@ def finalizar_compra():
                 return jsonify({'error': 'El carrito está vacío'}), 400
 
             # Este es el cogigo que va a entregar transkbank
-            codigo_venta = str('prueba_compra001')
+            codigo_venta = str(codigo)
 
             for item in productos:
                 producto_id = item['producto_id']
