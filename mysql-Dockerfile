@@ -1,0 +1,4 @@
+FROM mysql:8.0
+
+# Copiar el archivo SQL al directorio especial de inicialización
+COPY ferremas-sql/mysql-build.sql /docker-entrypoint-initdb.d/

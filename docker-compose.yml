@@ -1,0 +1,58 @@
+services:
+  mysql:
+    build:
+      context: .
+      dockerfile: mysql-Dockerfile
+    container_name: mysql-ferremas
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ferremas
+      MYSQL_USER: ferremas
+      MYSQL_PASSWORD: ferremas
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ferremas_net
+
+  
+  backend:
+    build:
+      context: .
+      dockerfile: flask-Dockerfile
+    container_name: backend-ferremas
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./ferremas-back:/app
+    env_file:
+      - ferremas-back/.docker.env
+    command: python main.py
+    networks:
+      - ferremas_net
+    depends_on:
+      - mysql
+
+  
+  frontend:
+    build: 
+      context: .
+      dockerfile: react-Dockerfile
+    container_name: frontend-ferremas
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - ferremas_net
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+
+networks:
+  ferremas_net:
+    driver: bridge
